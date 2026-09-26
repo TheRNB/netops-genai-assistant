@@ -1,0 +1,27 @@
+# Claude / editor config
+.claude/
+.cursor/
+.vscode/
+
+# Env / secrets / local config
+.env
+.env.*
+config.local.py
+*.key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Data / vector store / reports (generated, not source)
+chroma_db/
+*.log
+
+# OS
+.DS_Store
