@@ -9,7 +9,7 @@ Status: under active development — see commit history for progress.
 
 ## Stack
 Python 3.11, sentence-transformers, Chroma, Ollama (llama3.1:8b), FastAPI, pandas,
-matplotlib, ragas. Developed with Cursor AI.
+matplotlib, ragas.
 
 ## Setup
 ```
