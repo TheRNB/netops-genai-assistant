@@ -83,6 +83,25 @@ Run `python -m src.evaluate` for a fresh run. Measured on 30 grounded Q/A pairs 
 Triage accuracy is meaningfully lower than the RAG metrics — see REPORT.md for why and
 what would improve it.
 
+## LLM backend comparison
+
+`python scripts/compare_models.py` runs the same eval suite against 6 local models
+(same fixed judge model throughout). Results in `eval/model_comparison.json`:
+
+| Model | Faithfulness | Relevance | Severity acc. | Cause acc. | Time |
+|---|---|---|---|---|---|
+| llama3.1:8b | 5.00 | 5.00 | 0.53 | 0.33 | 5.4 min |
+| deepseek-r1:8b | 4.80 | 4.97 | 0.47 | 0.33 | 19.3 min |
+| qwen2.5:14b | 4.87 | 4.93 | 0.40 | 0.40 | 13.6 min |
+| deepseek-r1:14b | 4.93 | 4.97 | 0.53 | 0.53 | 37.7 min |
+| mistral-nemo:12b | 4.73 | 4.57 | 0.47 | 0.53 | 9.3 min |
+| gemma2:9b | 4.90 | 4.87 | 0.40 | 0.40 | 7.7 min |
+
+Hit-rate@k is 1.00 for every model, since retrieval doesn't depend on the LLM at all.
+Bigger and reasoning-tuned models don't clearly beat the 8B baseline on triage accuracy
+— `deepseek-r1:14b` matches the best severity/cause scores but takes 7x longer than
+`llama3.1:8b` to do it. See REPORT.md for what this suggests about the bottleneck.
+
 ## Analytics
 
 `python -m src.analytics` profiles `data/ops_kpis.csv`, flags per-site anomalies via a

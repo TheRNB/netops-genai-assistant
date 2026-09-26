@@ -53,7 +53,7 @@ _TRIAGE_SYSTEM_PROMPT = (
 )
 
 
-def triage(incident_text: str) -> Triage:
+def triage(incident_text: str, model: str | None = None) -> Triage:
     hits = doc_retrieval(incident_text)
     runbook_context = "\n\n".join(f"[{h['source_doc_id']}] {h['text']}" for h in hits)
     source_ids = sorted({h["source_doc_id"] for h in hits})
@@ -64,7 +64,7 @@ def triage(incident_text: str) -> Triage:
     prompt = (
         f"Incident: {incident_text}\n\nRunbook context:\n{runbook_context}\n\nKPI context:\n{kpi_context}"
     )
-    reply = generate(prompt, system=_TRIAGE_SYSTEM_PROMPT)
+    reply = generate(prompt, system=_TRIAGE_SYSTEM_PROMPT, model=model)
     match = re.search(r"\{.*\}", reply, re.DOTALL)
     data = json.loads(match.group()) if match else json.loads(reply)
     data["sources"] = source_ids  # always cite the actually-retrieved docs, not the LLM's own claim

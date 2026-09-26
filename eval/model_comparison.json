@@ -1,0 +1,86 @@
+{
+  "llama3.1:8b": {
+    "rag": {
+      "hit_rate_at_k": 1.0,
+      "avg_faithfulness": 5.0,
+      "avg_relevance": 5.0,
+      "n": 30
+    },
+    "triage": {
+      "severity_accuracy": 0.5333333333333333,
+      "cause_accuracy": 0.3333333333333333,
+      "n": 15
+    },
+    "elapsed_sec": 325.9
+  },
+  "deepseek-r1:8b": {
+    "rag": {
+      "hit_rate_at_k": 1.0,
+      "avg_faithfulness": 4.8,
+      "avg_relevance": 4.966666666666667,
+      "n": 30
+    },
+    "triage": {
+      "severity_accuracy": 0.4666666666666667,
+      "cause_accuracy": 0.3333333333333333,
+      "n": 15
+    },
+    "elapsed_sec": 1155.7
+  },
+  "qwen2.5:14b": {
+    "rag": {
+      "hit_rate_at_k": 1.0,
+      "avg_faithfulness": 4.866666666666666,
+      "avg_relevance": 4.933333333333334,
+      "n": 30
+    },
+    "triage": {
+      "severity_accuracy": 0.4,
+      "cause_accuracy": 0.4,
+      "n": 15
+    },
+    "elapsed_sec": 817.0
+  },
+  "deepseek-r1:14b": {
+    "rag": {
+      "hit_rate_at_k": 1.0,
+      "avg_faithfulness": 4.933333333333334,
+      "avg_relevance": 4.966666666666667,
+      "n": 30
+    },
+    "triage": {
+      "severity_accuracy": 0.5333333333333333,
+      "cause_accuracy": 0.5333333333333333,
+      "n": 15
+    },
+    "elapsed_sec": 2264.9
+  },
+  "mistral-nemo:12b": {
+    "rag": {
+      "hit_rate_at_k": 1.0,
+      "avg_faithfulness": 4.733333333333333,
+      "avg_relevance": 4.566666666666666,
+      "n": 30
+    },
+    "triage": {
+      "severity_accuracy": 0.4666666666666667,
+      "cause_accuracy": 0.5333333333333333,
+      "n": 15
+    },
+    "elapsed_sec": 556.3
+  },
+  "gemma2:9b": {
+    "rag": {
+      "hit_rate_at_k": 1.0,
+      "avg_faithfulness": 4.9,
+      "avg_relevance": 4.866666666666666,
+      "n": 30
+    },
+    "triage": {
+      "severity_accuracy": 0.4,
+      "cause_accuracy": 0.4,
+      "n": 15
+    },
+    "elapsed_sec": 463.2
+  }
+}

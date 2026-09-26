@@ -20,10 +20,10 @@ def retrieve(query: str, k: int = 4) -> list[dict]:
     return hits
 
 
-def answer(question: str, k: int = TOP_K) -> dict:
+def answer(question: str, k: int = TOP_K, model: str | None = None) -> dict:
     hits = retrieve(question, k)
     context = "\n\n".join(f"[{h['source_doc_id']}] {h['text']}" for h in hits)
     prompt = f"Context:\n{context}\n\nQuestion: {question}"
-    text = generate(prompt, system=_SYSTEM_PROMPT)
+    text = generate(prompt, system=_SYSTEM_PROMPT, model=model)
     source_doc_ids = sorted({h["source_doc_id"] for h in hits})
     return {"answer": text, "source_doc_ids": source_doc_ids}
