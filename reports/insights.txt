@@ -1,0 +1,9 @@
+Top anomalous sites (by flagged-row count):
+  site_19: 13
+  site_12: 13
+  site_05: 12
+  site_17: 12
+  site_14: 12
+
+Total rows: 6720, flagged: 179 (2.66%)
+Incident types present: ['congestion', 'latency_spike', 'link_down', 'packet_loss']
