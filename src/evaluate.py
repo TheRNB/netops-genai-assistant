@@ -1,6 +1,7 @@
 import json
 import re
 
+from src.agent import triage
 from src.config import EVAL_DIR
 from src.llm import generate
 from src.rag import answer, retrieve
@@ -45,7 +46,30 @@ def evaluate_rag(qa_set: list[dict]) -> dict:
     }
 
 
+# Cause labels are free text vs. a short category, so match them by LLM judgment rather than exact string equality.
+def _cause_matches(expected_cause: str, likely_cause: str) -> bool:
+    prompt = (
+        "Does the PREDICTED cause semantically match the EXPECTED cause category? Reply with ONLY YES or NO.\n\n"
+        f"EXPECTED: {expected_cause}\nPREDICTED: {likely_cause}"
+    )
+    return "yes" in generate(prompt).lower()
+
+
+def triage_accuracy(incidents: list[dict]) -> dict:
+    severity_correct, cause_correct = 0, 0
+    for item in incidents:
+        result = triage(item["incident_text"])
+        severity_correct += result.severity == item["expected_severity"]
+        cause_correct += _cause_matches(item["expected_cause"], result.likely_cause)
+    n = len(incidents)
+    return {
+        "severity_accuracy": severity_correct / n if n else 0.0,
+        "cause_accuracy": cause_correct / n if n else 0.0,
+        "n": n,
+    }
+
+
 if __name__ == "__main__":
     qa_set = json.loads((EVAL_DIR / "qa_set.json").read_text())
-    metrics = evaluate_rag(qa_set)
-    print(json.dumps(metrics, indent=2))
+    incidents = json.loads((EVAL_DIR / "incidents.json").read_text())
+    print(json.dumps({"rag": evaluate_rag(qa_set), "triage": triage_accuracy(incidents)}, indent=2))

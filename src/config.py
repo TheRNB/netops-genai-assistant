@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT_DIR / "data"
 RUNBOOKS_DIR = DATA_DIR / "runbooks"
+OPS_KPI_CSV = DATA_DIR / "ops_kpis.csv"
 CHROMA_DIR = ROOT_DIR / "chroma_db"
 EVAL_DIR = ROOT_DIR / "eval"
 REPORTS_DIR = ROOT_DIR / "reports"
