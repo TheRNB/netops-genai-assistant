@@ -1,0 +1,77 @@
+[
+  {
+    "incident_text": "Site 03 backhaul link shows link down, radio hardware still alarming healthy.",
+    "expected_cause": "backhaul_failure",
+    "expected_severity": "critical"
+  },
+  {
+    "incident_text": "Cell at site 07 has latency over 200ms for the last hour, throughput looks normal.",
+    "expected_cause": "latency",
+    "expected_severity": "medium"
+  },
+  {
+    "incident_text": "Site 12 packet loss climbed to 4% over the last 15 minutes.",
+    "expected_cause": "packet_loss",
+    "expected_severity": "high"
+  },
+  {
+    "incident_text": "Subscribers at site 05 report no internet access, backhaul and radio both look healthy.",
+    "expected_cause": "dns",
+    "expected_severity": "medium"
+  },
+  {
+    "incident_text": "Site 09 throughput dropped to 40% of baseline only between 6pm and 9pm.",
+    "expected_cause": "congestion",
+    "expected_severity": "medium"
+  },
+  {
+    "incident_text": "Site 14 has gone completely unreachable, including on the management plane.",
+    "expected_cause": "outage",
+    "expected_severity": "critical"
+  },
+  {
+    "incident_text": "Handover success rate between site 02 and site 03 dropped sharply this morning.",
+    "expected_cause": "handover",
+    "expected_severity": "high"
+  },
+  {
+    "incident_text": "VoLTE call drop rate at site 08 is elevated, drops concentrated near the cell edge.",
+    "expected_cause": "handover",
+    "expected_severity": "high"
+  },
+  {
+    "incident_text": "Site 16 PRB utilization has been above 92% for six straight hours.",
+    "expected_cause": "capacity",
+    "expected_severity": "medium"
+  },
+  {
+    "incident_text": "Site 11 baseband unit has rebooted five times in the last twenty minutes.",
+    "expected_cause": "firmware",
+    "expected_severity": "critical"
+  },
+  {
+    "incident_text": "Site 04 dropped briefly with a mains-power-loss alarm then battery engaged, now back on mains.",
+    "expected_cause": "power",
+    "expected_severity": "low"
+  },
+  {
+    "incident_text": "Site 19 microwave backhaul RSL has been degraded since the storm started an hour ago.",
+    "expected_cause": "backhaul_fade",
+    "expected_severity": "medium"
+  },
+  {
+    "incident_text": "Site 06 RRC connection setup failure rate spiked right after last night's firmware push.",
+    "expected_cause": "signaling",
+    "expected_severity": "high"
+  },
+  {
+    "incident_text": "A site-to-site VPN tunnel between site 10 and the core has been down for 30 minutes.",
+    "expected_cause": "vpn",
+    "expected_severity": "high"
+  },
+  {
+    "incident_text": "Site 17 IPsec tunnel to the core failed to renegotiate this morning, no config changes reported.",
+    "expected_cause": "security_cert",
+    "expected_severity": "high"
+  }
+]
