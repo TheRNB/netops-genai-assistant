@@ -9,13 +9,15 @@ CHROMA_DIR = ROOT_DIR / "chroma_db"
 EVAL_DIR = ROOT_DIR / "eval"
 REPORTS_DIR = ROOT_DIR / "reports"
 
-CHUNK_SIZE = 500
-CHUNK_OVERLAP = 50
+# Sized so most runbooks (~90%) stay in one chunk, with a few long ones (~10%) actually needing to split.
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 100
 TOP_K = 4
 
 EMBED_MODEL = "all-MiniLM-L6-v2"
 
 LLM_BACKEND = os.getenv("LLM_BACKEND", "ollama")
 LLM_MODEL = os.getenv("LLM_MODEL", "llama3.1:8b")
+LLM_SEED = int(os.getenv("LLM_SEED", "46"))
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

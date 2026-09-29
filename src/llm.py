@@ -2,7 +2,7 @@ import re
 
 import ollama
 
-from src.config import LLM_MODEL, OLLAMA_HOST
+from src.config import LLM_MODEL, LLM_SEED, OLLAMA_HOST
 
 
 def _strip_think(text: str) -> str:
@@ -16,5 +16,5 @@ def generate(prompt: str, system: str | None = None, model: str | None = None) -
     if system:
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
-    response = client.chat(model=model or LLM_MODEL, messages=messages)
+    response = client.chat(model=model or LLM_MODEL, messages=messages, options={"seed": LLM_SEED})
     return _strip_think(response["message"]["content"])

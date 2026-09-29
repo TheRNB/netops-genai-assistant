@@ -13,6 +13,8 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
     while start < len(text):
         end = start + chunk_size
         chunks.append(text[start:end])
+        if end >= len(text):
+            break  # this chunk already reached the end; don't emit a redundant trailing tail
         start += chunk_size - overlap
     return [c for c in chunks if c.strip()]
 
@@ -24,6 +26,12 @@ def get_collection():
 
 
 def build_index() -> int:
+    # upsert alone never removes stale chunks, so drop and recreate the collection for a controlled, reproducible corpus each run.
+    client = chromadb.PersistentClient(path=str(CHROMA_DIR), settings=Settings(anonymized_telemetry=False))
+    try:
+        client.delete_collection(COLLECTION_NAME)
+    except (ValueError, chromadb.errors.NotFoundError):
+        pass  # nothing to drop on a first run
     collection = get_collection()
     ids, docs, metadatas = [], [], []
     for path in sorted(RUNBOOKS_DIR.glob("*.md")):

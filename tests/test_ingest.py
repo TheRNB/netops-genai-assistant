@@ -12,6 +12,12 @@ def test_chunk_text_empty_string():
     assert chunk_text("") == []
 
 
+def test_chunk_text_no_redundant_trailing_chunk_when_text_fits():
+    text = "x" * 900
+    chunks = chunk_text(text, chunk_size=1000, overlap=100)
+    assert len(chunks) == 1
+
+
 def test_build_index_returns_positive_chunk_count():
     n = build_index()
     assert n > 0
