@@ -22,6 +22,7 @@ venv/
 # Data / vector store / reports (generated, not source)
 chroma_db/
 *.log
+eval/checkpoints/
 
 # OS
 .DS_Store
