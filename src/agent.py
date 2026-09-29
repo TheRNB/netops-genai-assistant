@@ -71,6 +71,15 @@ def triage(incident_text: str, model: str | None = None) -> Triage:
     return Triage(**data)
 
 
+# No doc_retrieval, no kpi_lookup — the ablation baseline for measuring what the tools actually buy us.
+def triage_zero_shot(incident_text: str, model: str | None = None) -> Triage:
+    reply = generate(f"Incident: {incident_text}", system=_TRIAGE_SYSTEM_PROMPT, model=model)
+    match = re.search(r"\{.*\}", reply, re.DOTALL)
+    data = json.loads(match.group()) if match else json.loads(reply)
+    data["sources"] = []
+    return Triage(**data)
+
+
 if __name__ == "__main__":
     import sys
 

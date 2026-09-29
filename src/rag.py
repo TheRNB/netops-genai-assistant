@@ -27,3 +27,9 @@ def answer(question: str, k: int = TOP_K, model: str | None = None) -> dict:
     text = generate(prompt, system=_SYSTEM_PROMPT, model=model)
     source_doc_ids = sorted({h["source_doc_id"] for h in hits})
     return {"answer": text, "source_doc_ids": source_doc_ids}
+
+
+# No retrieval at all — the ablation baseline for measuring what RAG actually buys us.
+def answer_zero_shot(question: str, model: str | None = None) -> dict:
+    text = generate(question, system="You are a network-operations assistant. Answer from your own knowledge.", model=model)
+    return {"answer": text, "source_doc_ids": []}
