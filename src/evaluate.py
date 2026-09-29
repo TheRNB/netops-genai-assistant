@@ -3,6 +3,7 @@ import re
 
 import sacrebleu
 from rouge_score import rouge_scorer
+from tqdm import tqdm
 
 from src.agent import triage, triage_zero_shot
 from src.config import EVAL_DIR
@@ -10,6 +11,18 @@ from src.llm import generate
 from src.rag import answer, answer_zero_shot, retrieve
 
 _rouge = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
+_CHECKPOINT_DIR = EVAL_DIR / "checkpoints"
+
+
+# Ollama can only keep one big model loaded at a time, so if we called the target model and the
+# judge model back-to-back inside one loop it'd swap models on every single item. Writing this so
+# every function does all its target-model calls first, then all its judge-model calls, keeps each
+# model loaded for one long stretch instead of thrashing. Also dumps progress here so a crash
+# partway through doesn't lose whatever's already been computed.
+def _checkpoint(name: str, model: str | None, data) -> None:
+    _CHECKPOINT_DIR.mkdir(exist_ok=True)
+    safe_model = (model or "default").replace(":", "_").replace("/", "_")
+    (_CHECKPOINT_DIR / f"{name}_{safe_model}.json").write_text(json.dumps(data, indent=2))
 
 
 # Deterministic, no LLM call — a fast sanity check alongside the LLM-judge scores above.
@@ -60,16 +73,24 @@ def hit_rate_at_k(qa_set: list[dict], k: int = 4) -> float:
 
 
 def evaluate_rag(qa_set: list[dict], model: str | None = None) -> dict:
-    faithfulness_scores, relevance_scores, correctness_scores = [], [], []
-    rouge_l_scores, bleu_scores = [], []
-    for item in qa_set:
+    # Pass 1: generation, all on the target model — no swapping to the judge model yet.
+    generated = []
+    for item in tqdm(qa_set, desc="evaluate_rag: generate"):
         result = answer(item["question"], model=model)
         context = "\n".join(h["text"] for h in retrieve(item["question"]))
-        faithfulness_scores.append(_judge_score(item["question"], context, result["answer"], "faithfulness to the context"))
-        relevance_scores.append(_judge_score(item["question"], context, result["answer"], "relevance to the question"))
-        correctness_scores.append(_correctness_score(item["question"], item["reference_answer"], result["answer"]))
-        rouge_l_scores.append(_rouge_l(item["reference_answer"], result["answer"]))
-        bleu_scores.append(_bleu(item["reference_answer"], result["answer"]))
+        generated.append({**item, "context": context, "model_answer": result["answer"]})
+    _checkpoint("evaluate_rag_generated", model, generated)
+
+    # Pass 2: judging, all on the fixed judge model — one swap total instead of one per item.
+    faithfulness_scores, relevance_scores, correctness_scores = [], [], []
+    rouge_l_scores, bleu_scores = [], []
+    for item in tqdm(generated, desc="evaluate_rag: judge"):
+        ans = item["model_answer"]
+        faithfulness_scores.append(_judge_score(item["question"], item["context"], ans, "faithfulness to the context"))
+        relevance_scores.append(_judge_score(item["question"], item["context"], ans, "relevance to the question"))
+        correctness_scores.append(_correctness_score(item["question"], item["reference_answer"], ans))
+        rouge_l_scores.append(_rouge_l(item["reference_answer"], ans))
+        bleu_scores.append(_bleu(item["reference_answer"], ans))
 
     return {
         "hit_rate_at_k": hit_rate_at_k(qa_set),
@@ -84,12 +105,18 @@ def evaluate_rag(qa_set: list[dict], model: str | None = None) -> dict:
 
 # Ablation baseline: same qa_set, no retrieval at all, scored only on correctness (no context to judge faithfulness against).
 def evaluate_rag_zero_shot(qa_set: list[dict], model: str | None = None) -> dict:
-    correctness_scores, rouge_l_scores, bleu_scores = [], [], []
-    for item in qa_set:
+    generated = []
+    for item in tqdm(qa_set, desc="evaluate_rag_zero_shot: generate"):
         result = answer_zero_shot(item["question"], model=model)
-        correctness_scores.append(_correctness_score(item["question"], item["reference_answer"], result["answer"]))
-        rouge_l_scores.append(_rouge_l(item["reference_answer"], result["answer"]))
-        bleu_scores.append(_bleu(item["reference_answer"], result["answer"]))
+        generated.append({**item, "model_answer": result["answer"]})
+    _checkpoint("evaluate_rag_zero_shot_generated", model, generated)
+
+    correctness_scores, rouge_l_scores, bleu_scores = [], [], []
+    for item in tqdm(generated, desc="evaluate_rag_zero_shot: judge"):
+        ans = item["model_answer"]
+        correctness_scores.append(_correctness_score(item["question"], item["reference_answer"], ans))
+        rouge_l_scores.append(_rouge_l(item["reference_answer"], ans))
+        bleu_scores.append(_bleu(item["reference_answer"], ans))
     return {
         "avg_correctness": sum(correctness_scores) / len(correctness_scores),
         "avg_rouge_l": sum(rouge_l_scores) / len(rouge_l_scores),
@@ -108,11 +135,18 @@ def _cause_matches(expected_cause: str, likely_cause: str) -> bool:
 
 
 def triage_accuracy(incidents: list[dict], model: str | None = None) -> dict:
-    severity_correct, cause_correct = 0, 0
-    for item in incidents:
+    # Pass 1: triage calls on the target model.
+    triaged = []
+    for item in tqdm(incidents, desc="triage_accuracy: triage"):
         result = triage(item["incident_text"], model=model)
-        severity_correct += result.severity == item["expected_severity"]
-        cause_correct += _cause_matches(item["expected_cause"], result.likely_cause)
+        triaged.append({**item, "severity": result.severity, "likely_cause": result.likely_cause})
+    _checkpoint("triage_accuracy_triaged", model, triaged)
+
+    # Pass 2: cause-matching on the fixed judge model.
+    severity_correct, cause_correct = 0, 0
+    for item in tqdm(triaged, desc="triage_accuracy: judge"):
+        severity_correct += item["severity"] == item["expected_severity"]
+        cause_correct += _cause_matches(item["expected_cause"], item["likely_cause"])
     n = len(incidents)
     return {
         "severity_accuracy": severity_correct / n if n else 0.0,
@@ -123,11 +157,16 @@ def triage_accuracy(incidents: list[dict], model: str | None = None) -> dict:
 
 # Ablation baseline: same incidents, no doc_retrieval/kpi_lookup tools at all.
 def triage_accuracy_zero_shot(incidents: list[dict], model: str | None = None) -> dict:
-    severity_correct, cause_correct = 0, 0
-    for item in incidents:
+    triaged = []
+    for item in tqdm(incidents, desc="triage_accuracy_zero_shot: triage"):
         result = triage_zero_shot(item["incident_text"], model=model)
-        severity_correct += result.severity == item["expected_severity"]
-        cause_correct += _cause_matches(item["expected_cause"], result.likely_cause)
+        triaged.append({**item, "severity": result.severity, "likely_cause": result.likely_cause})
+    _checkpoint("triage_accuracy_zero_shot_triaged", model, triaged)
+
+    severity_correct, cause_correct = 0, 0
+    for item in tqdm(triaged, desc="triage_accuracy_zero_shot: judge"):
+        severity_correct += item["severity"] == item["expected_severity"]
+        cause_correct += _cause_matches(item["expected_cause"], item["likely_cause"])
     n = len(incidents)
     return {
         "severity_accuracy": severity_correct / n if n else 0.0,
