@@ -1,15 +1,35 @@
 import json
 import re
 
-from src.agent import triage
+import sacrebleu
+from rouge_score import rouge_scorer
+
+from src.agent import triage, triage_zero_shot
 from src.config import EVAL_DIR
 from src.llm import generate
-from src.rag import answer, retrieve
+from src.rag import answer, answer_zero_shot, retrieve
+
+_rouge = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
+
+
+# Deterministic, no LLM call — a fast sanity check alongside the LLM-judge scores above.
+def _rouge_l(reference: str, answer_text: str) -> float:
+    return _rouge.score(reference, answer_text)["rougeL"].fmeasure
+
+
+def _bleu(reference: str, answer_text: str) -> float:
+    return sacrebleu.sentence_bleu(answer_text, [reference]).score / 100
 
 # ragas 0.2.10 won't import here (missing ChatVertexAI), so we just prompt the LLM to judge directly.
 _JUDGE_PROMPT = (
     "Rate the ANSWER on a 1-5 scale for {aspect} given the QUESTION and CONTEXT. "
     "Reply with ONLY the integer.\n\nQUESTION: {question}\nCONTEXT: {context}\nANSWER: {answer}"
+)
+
+# Same idea but scored against a reference answer instead of retrieved context — works with or without RAG.
+_CORRECTNESS_PROMPT = (
+    "Rate how well the ANSWER matches the REFERENCE ANSWER on a 1-5 scale (5 = same facts, 1 = contradicts or "
+    "unrelated). Reply with ONLY the integer.\n\nQUESTION: {question}\nREFERENCE ANSWER: {reference}\nANSWER: {answer}"
 )
 
 # Fixed so every model is graded by the same judge.
@@ -18,6 +38,13 @@ JUDGE_MODEL = "llama3.1:8b"
 
 def _judge_score(question: str, context: str, answer_text: str, aspect: str) -> int:
     prompt = _JUDGE_PROMPT.format(aspect=aspect, question=question, context=context, answer=answer_text)
+    reply = generate(prompt, model=JUDGE_MODEL)
+    match = re.search(r"[1-5]", reply)
+    return int(match.group()) if match else 1
+
+
+def _correctness_score(question: str, reference: str, answer_text: str) -> int:
+    prompt = _CORRECTNESS_PROMPT.format(question=question, reference=reference, answer=answer_text)
     reply = generate(prompt, model=JUDGE_MODEL)
     match = re.search(r"[1-5]", reply)
     return int(match.group()) if match else 1
@@ -33,17 +60,40 @@ def hit_rate_at_k(qa_set: list[dict], k: int = 4) -> float:
 
 
 def evaluate_rag(qa_set: list[dict], model: str | None = None) -> dict:
-    faithfulness_scores, relevance_scores = [], []
+    faithfulness_scores, relevance_scores, correctness_scores = [], [], []
+    rouge_l_scores, bleu_scores = [], []
     for item in qa_set:
         result = answer(item["question"], model=model)
         context = "\n".join(h["text"] for h in retrieve(item["question"]))
         faithfulness_scores.append(_judge_score(item["question"], context, result["answer"], "faithfulness to the context"))
         relevance_scores.append(_judge_score(item["question"], context, result["answer"], "relevance to the question"))
+        correctness_scores.append(_correctness_score(item["question"], item["reference_answer"], result["answer"]))
+        rouge_l_scores.append(_rouge_l(item["reference_answer"], result["answer"]))
+        bleu_scores.append(_bleu(item["reference_answer"], result["answer"]))
 
     return {
         "hit_rate_at_k": hit_rate_at_k(qa_set),
         "avg_faithfulness": sum(faithfulness_scores) / len(faithfulness_scores),
         "avg_relevance": sum(relevance_scores) / len(relevance_scores),
+        "avg_correctness": sum(correctness_scores) / len(correctness_scores),
+        "avg_rouge_l": sum(rouge_l_scores) / len(rouge_l_scores),
+        "avg_bleu": sum(bleu_scores) / len(bleu_scores),
+        "n": len(qa_set),
+    }
+
+
+# Ablation baseline: same qa_set, no retrieval at all, scored only on correctness (no context to judge faithfulness against).
+def evaluate_rag_zero_shot(qa_set: list[dict], model: str | None = None) -> dict:
+    correctness_scores, rouge_l_scores, bleu_scores = [], [], []
+    for item in qa_set:
+        result = answer_zero_shot(item["question"], model=model)
+        correctness_scores.append(_correctness_score(item["question"], item["reference_answer"], result["answer"]))
+        rouge_l_scores.append(_rouge_l(item["reference_answer"], result["answer"]))
+        bleu_scores.append(_bleu(item["reference_answer"], result["answer"]))
+    return {
+        "avg_correctness": sum(correctness_scores) / len(correctness_scores),
+        "avg_rouge_l": sum(rouge_l_scores) / len(rouge_l_scores),
+        "avg_bleu": sum(bleu_scores) / len(bleu_scores),
         "n": len(qa_set),
     }
 
@@ -61,6 +111,21 @@ def triage_accuracy(incidents: list[dict], model: str | None = None) -> dict:
     severity_correct, cause_correct = 0, 0
     for item in incidents:
         result = triage(item["incident_text"], model=model)
+        severity_correct += result.severity == item["expected_severity"]
+        cause_correct += _cause_matches(item["expected_cause"], result.likely_cause)
+    n = len(incidents)
+    return {
+        "severity_accuracy": severity_correct / n if n else 0.0,
+        "cause_accuracy": cause_correct / n if n else 0.0,
+        "n": n,
+    }
+
+
+# Ablation baseline: same incidents, no doc_retrieval/kpi_lookup tools at all.
+def triage_accuracy_zero_shot(incidents: list[dict], model: str | None = None) -> dict:
+    severity_correct, cause_correct = 0, 0
+    for item in incidents:
+        result = triage_zero_shot(item["incident_text"], model=model)
         severity_correct += result.severity == item["expected_severity"]
         cause_correct += _cause_matches(item["expected_cause"], result.likely_cause)
     n = len(incidents)

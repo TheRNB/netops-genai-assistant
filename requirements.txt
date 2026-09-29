@@ -9,5 +9,7 @@ matplotlib==3.10.0
 scikit-learn==1.6.0
 pydantic==2.10.4
 ragas==0.2.10
+rouge-score==0.1.2
+sacrebleu==2.4.3
 pytest==8.3.4
 httpx
