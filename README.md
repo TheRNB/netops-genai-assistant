@@ -4,8 +4,38 @@ An agentic RAG assistant for network-operations incident triage. Given a free-te
 incident description, it retrieves relevant runbook documentation, pulls the affected
 site's live KPI metrics through a tool call, and returns a structured triage decision
 (severity, likely cause, recommended steps, cited sources). A separate analytics module
-profiles the operational KPI data for anomalies. An evaluation harness scores both the
-RAG answers and the triage decisions against labeled data.
+profiles the operational KPI data for anomalies. An evaluation harness (six models,
+four test suites, LLM-judge and deterministic metrics) probes both the RAG answers and
+the triage decisions against labeled data, including two ablation designs built to
+stress-test whether retrieval is actually doing anything.
+
+## Key findings
+
+**Across the full evaluation suite (4 test designs × 6 local LLMs, 96 total
+model/scenario runs), retrieval lifts answer correctness by an average of +18.3
+percentage points, with perfect (1.00) retrieval accuracy in every single run.**
+
+That average is driven by exactly the scenario RAG is supposed to win: on facts a
+model cannot possibly know without retrieval, grounding takes correctness from ~60%
+to 100% across all six models tested, every time. It's not a story of universal,
+model-agnostic lift, though: performance is model-dependent (that's the point of
+testing six of them). The full model-by-model, scenario-by-scenario breakdown,
+including where RAG's edge shrinks or disappears, is in **[REPORT.md](REPORT.md)**.
+
+- **Retrieval is solved for this corpus**: hit_rate@k = 1.00 in every run, across all
+  six models tested. Whatever else varies, the system never fetches the wrong document.
+- **Grounding is decisive exactly where it should be**: +39.6pp correctness on facts
+  fabricated to be unknowable without retrieval, 6 of 6 models.
+- **Model choice determines whether retrieved context actually gets trusted.** Given a
+  runbook fact that contradicts generic troubleshooting wisdom, 4 of 6 models correctly
+  override their own prior; 2 of 6 mostly refuse to answer at all.
+- **Bigger and reasoning-tuned models don't reliably improve triage accuracy**:
+  `deepseek-r1:14b`'s extended reasoning traces don't beat smaller non-reasoning models
+  on cause/severity accuracy, and take much longer to produce an answer.
+- Six local backends compared under one fixed, seeded, checkpointed evaluation
+  pipeline. See [REPORT.md](REPORT.md#bugs-found-and-fixed-along-the-way) for the full
+  bug-fixing story (chunking, stale indexes, model-swap thrashing) behind getting these
+  numbers to be trustworthy.
 
 ## Architecture
 
@@ -25,13 +55,22 @@ flowchart LR
 ```
 
 ## Stack
-Python 3.11, sentence-transformers (all-MiniLM-L6-v2), Chroma, Ollama (llama3.1:8b,
-local inference), FastAPI, pandas, matplotlib, scikit-learn, pydantic. Evaluation uses
-a direct LLM-as-judge (ragas 0.2.10 was attempted but has a broken import against the
-installed langchain-community version, so a lightweight judge prompt is used instead —
-see `src/evaluate.py`).
+
+- **Language / runtime**: Python 3.11
+- **Retrieval**: Chroma, sentence-transformers (`all-MiniLM-L6-v2`)
+- **Serving**: FastAPI, pydantic
+- **Analytics**: pandas, matplotlib, scikit-learn
+- **LLM client**: `src/llm.py` hits Ollama's OpenAI-compatible `/v1/chat/completions`
+  endpoint directly over HTTP, no vendor-specific SDK. Swapping in any other
+  OpenAI-compatible backend (vLLM, LM Studio, a hosted API, a different machine on the
+  network) is a base-URL and model-name change (`OLLAMA_HOST`, `LLM_MODEL` env vars),
+  no code changes. A fixed seed (`LLM_SEED`) is sent on every call for reproducibility.
+- **Evaluation**: direct LLM-as-judge prompting (`ragas` was tried first but its pinned
+  version fails to import against the installed `langchain-community`) plus
+  deterministic ROUGE-L/BLEU. See `src/evaluate.py`.
 
 ## Setup
+
 ```
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
@@ -40,6 +79,7 @@ python -m src.ingest          # build the vector index
 ```
 
 ## Usage
+
 ```
 python -m src.cli ask "What should I check for high latency on a cell site?"
 python -m src.agent "site 12 has high latency and packet loss"
@@ -69,38 +109,17 @@ curl -X POST http://127.0.0.1:8000/triage \
 
 ## Evaluation
 
-Run `python -m src.evaluate` for a fresh run. Measured on 30 grounded Q/A pairs and
-15 labeled incidents:
+```
+python -m src.evaluate                        # main eval, default model
+python scripts/run_ablation.py                # RAG vs. zero-shot, main qa_set
+python scripts/run_invented_facts_ablation.py # RAG vs. zero-shot, unknowable facts
+python scripts/run_counterfactual_ablation.py # RAG vs. zero-shot, context-overrides-prior
+```
 
-| Metric | Value |
-|---|---|
-| RAG hit-rate@k | 1.00 |
-| RAG avg. faithfulness (1-5) | 4.73 |
-| RAG avg. relevance (1-5) | 4.93 |
-| Triage severity accuracy | 0.60 |
-| Triage cause accuracy | 0.47 |
-
-Triage accuracy is meaningfully lower than the RAG metrics — see REPORT.md for why and
-what would improve it.
-
-## LLM backend comparison
-
-`python scripts/compare_models.py` runs the same eval suite against 6 local models
-(same fixed judge model throughout). Results in `eval/model_comparison.json`:
-
-| Model | Faithfulness | Relevance | Severity acc. | Cause acc. | Time |
-|---|---|---|---|---|---|
-| llama3.1:8b | 5.00 | 5.00 | 0.53 | 0.33 | 5.4 min |
-| deepseek-r1:8b | 4.80 | 4.97 | 0.47 | 0.33 | 19.3 min |
-| qwen2.5:14b | 4.87 | 4.93 | 0.40 | 0.40 | 13.6 min |
-| deepseek-r1:14b | 4.93 | 4.97 | 0.53 | 0.53 | 37.7 min |
-| mistral-nemo:12b | 4.73 | 4.57 | 0.47 | 0.53 | 9.3 min |
-| gemma2:9b | 4.90 | 4.87 | 0.40 | 0.40 | 7.7 min |
-
-Hit-rate@k is 1.00 for every model, since retrieval doesn't depend on the LLM at all.
-Bigger and reasoning-tuned models don't clearly beat the 8B baseline on triage accuracy
-— `deepseek-r1:14b` matches the best severity/cause scores but takes 7x longer than
-`llama3.1:8b` to do it. See REPORT.md for what this suggests about the bottleneck.
+Each script targets one model (edit the `MODEL` constant, or pass `model=` if calling
+the functions directly) and writes results to `eval/`. See
+[REPORT.md](REPORT.md#results) for the full six-model, four-suite comparison and what
+it means.
 
 ## Analytics
 
@@ -109,7 +128,12 @@ z-score threshold on latency/throughput/packet-loss, and writes charts plus an i
 summary to `reports/`.
 
 ## Tests
+
 ```
-pytest -m "not llm"   # fast, no LLM required
+pytest -m "not llm"   # fast, no LLM required (this is what CI runs)
 pytest                # full suite, requires a running Ollama instance
 ```
+
+## Contact
+
+Please feel free to reach out to me at aaron@bateni.org.
