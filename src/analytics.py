@@ -1,5 +1,7 @@
 import matplotlib
-matplotlib.use("Agg")
+
+matplotlib.use("Agg")  # must run before importing pyplot to force the non-interactive backend
+
 import matplotlib.pyplot as plt
 import pandas as pd
 

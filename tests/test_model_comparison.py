@@ -11,7 +11,7 @@ REQUIRED_MODELS = {"llama3.1:8b", "deepseek-r1:8b", "qwen2.5:14b", "deepseek-r1:
 def test_model_comparison_file_well_formed():
     data = json.loads((EVAL_DIR / "model_comparison.json").read_text())
     assert REQUIRED_MODELS <= data.keys()
-    for model, result in data.items():
+    for result in data.values():
         assert 0 <= result["rag"]["hit_rate_at_k"] <= 1
         assert 1 <= result["rag"]["avg_faithfulness"] <= 5
         assert 0 <= result["triage"]["severity_accuracy"] <= 1

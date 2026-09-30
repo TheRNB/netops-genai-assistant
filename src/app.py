@@ -3,7 +3,8 @@ import time
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from src.agent import extract_site_id, triage as run_triage
+from src.agent import extract_site_id
+from src.agent import triage as run_triage
 from src.rag import answer as run_answer
 
 app = FastAPI(title="NetOps GenAI Assistant")
