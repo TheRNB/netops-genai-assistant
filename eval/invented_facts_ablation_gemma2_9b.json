@@ -1,0 +1,18 @@
+{
+  "model": "gemma2:9b",
+  "with_rag": {
+    "hit_rate_at_k": 1.0,
+    "avg_faithfulness": 5.0,
+    "avg_relevance": 5.0,
+    "avg_correctness": 5.0,
+    "avg_rouge_l": 0.6237789987789988,
+    "avg_bleu": 0.2925659247164135,
+    "n": 8
+  },
+  "zero_shot": {
+    "avg_correctness": 2.5,
+    "avg_rouge_l": 0.03389094292286231,
+    "avg_bleu": 0.0037480251192452355,
+    "n": 8
+  }
+}

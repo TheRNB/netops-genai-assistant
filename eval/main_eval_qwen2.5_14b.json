@@ -1,0 +1,16 @@
+{
+  "rag": {
+    "hit_rate_at_k": 1.0,
+    "avg_faithfulness": 5.0,
+    "avg_relevance": 5.0,
+    "avg_correctness": 5.0,
+    "avg_rouge_l": 0.5334536772226862,
+    "avg_bleu": 0.22733900300740853,
+    "n": 30
+  },
+  "triage": {
+    "severity_accuracy": 0.4,
+    "cause_accuracy": 0.0,
+    "n": 15
+  }
+}

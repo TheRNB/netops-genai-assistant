@@ -1,0 +1,18 @@
+{
+  "model": "deepseek-r1:14b",
+  "with_rag": {
+    "hit_rate_at_k": 1.0,
+    "avg_faithfulness": 5.0,
+    "avg_relevance": 5.0,
+    "avg_correctness": 5.0,
+    "avg_rouge_l": 0.4938600653546606,
+    "avg_bleu": 0.17904731533905496,
+    "n": 6
+  },
+  "zero_shot": {
+    "avg_correctness": 3.3333333333333335,
+    "avg_rouge_l": 0.06056894178023319,
+    "avg_bleu": 0.0037422762162875878,
+    "n": 6
+  }
+}

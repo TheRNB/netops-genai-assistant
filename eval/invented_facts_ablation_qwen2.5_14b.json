@@ -1,0 +1,18 @@
+{
+  "model": "qwen2.5:14b",
+  "with_rag": {
+    "hit_rate_at_k": 1.0,
+    "avg_faithfulness": 5.0,
+    "avg_relevance": 5.0,
+    "avg_correctness": 5.0,
+    "avg_rouge_l": 0.4548192140103905,
+    "avg_bleu": 0.21149153207125918,
+    "n": 8
+  },
+  "zero_shot": {
+    "avg_correctness": 2.625,
+    "avg_rouge_l": 0.02844605583366721,
+    "avg_bleu": 0.003266273915749797,
+    "n": 8
+  }
+}

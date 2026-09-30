@@ -1,0 +1,18 @@
+{
+  "model": "mistral-nemo:12b",
+  "with_rag": {
+    "hit_rate_at_k": 1.0,
+    "avg_faithfulness": 5.0,
+    "avg_relevance": 5.0,
+    "avg_correctness": 2.5,
+    "avg_rouge_l": 0.08321645628798503,
+    "avg_bleu": 0.03366844516597177,
+    "n": 6
+  },
+  "zero_shot": {
+    "avg_correctness": 2.8333333333333335,
+    "avg_rouge_l": 0.05887202632904969,
+    "avg_bleu": 0.0034427155370599124,
+    "n": 6
+  }
+}

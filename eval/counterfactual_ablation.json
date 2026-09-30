@@ -1,0 +1,18 @@
+{
+  "model": "llama3.1:8b",
+  "with_rag": {
+    "hit_rate_at_k": 1.0,
+    "avg_faithfulness": 5.0,
+    "avg_relevance": 5.0,
+    "avg_correctness": 2.5,
+    "avg_rouge_l": 0.1285271342823212,
+    "avg_bleu": 0.040030511214644286,
+    "n": 6
+  },
+  "zero_shot": {
+    "avg_correctness": 2.8333333333333335,
+    "avg_rouge_l": 0.06591007870444443,
+    "avg_bleu": 0.004580965495330714,
+    "n": 6
+  }
+}

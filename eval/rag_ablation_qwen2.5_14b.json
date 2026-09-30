@@ -1,0 +1,32 @@
+{
+  "model": "qwen2.5:14b",
+  "with_rag": {
+    "rag": {
+      "hit_rate_at_k": 1.0,
+      "avg_faithfulness": 5.0,
+      "avg_relevance": 5.0,
+      "avg_correctness": 5.0,
+      "avg_rouge_l": 0.5334536772226862,
+      "avg_bleu": 0.22733900300740853,
+      "n": 30
+    },
+    "triage": {
+      "severity_accuracy": 0.4,
+      "cause_accuracy": 0.0,
+      "n": 15
+    }
+  },
+  "zero_shot": {
+    "rag": {
+      "avg_correctness": 4.966666666666667,
+      "avg_rouge_l": 0.04185523914925631,
+      "avg_bleu": 0.0025307070940795667,
+      "n": 30
+    },
+    "triage": {
+      "severity_accuracy": 0.6,
+      "cause_accuracy": 0.26666666666666666,
+      "n": 15
+    }
+  }
+}

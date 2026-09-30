@@ -1,0 +1,10 @@
+[
+  {"question": "What ticket routing code should I use to escalate an unexplained RF anomaly that survives two troubleshooting passes?", "reference_answer": "Ticket routing code NX-4471, to reach the RF forensics team.", "gold_doc_id": "RB026_escalation"},
+  {"question": "At what Zeta-Link Drift Index value should I initiate a Cold Failover?", "reference_answer": "When ZLDI exceeds 0.62.", "gold_doc_id": "RB027_backhaul"},
+  {"question": "What code is required to roll back firmware on an Aurelia-9 baseband card?", "reference_answer": "Rollback code AF-773.", "gold_doc_id": "RB028_firmware"},
+  {"question": "If congestion crosses the Sentinel-7 threshold, who should I page instead of filing a standard ticket?", "reference_answer": "Page the Nightwatch Ops queue directly.", "gold_doc_id": "RB029_congestion"},
+  {"question": "Who needs to sign off before an Obsidian Cycle maintenance window begins?", "reference_answer": "The Continuity Board.", "gold_doc_id": "RB030_process"},
+  {"question": "What is the maximum allowed Harbor Sync drift between paired core signaling nodes?", "reference_answer": "4 cycles.", "gold_doc_id": "RB031_signaling"},
+  {"question": "What does error code QRX-19 on a Meridian router actually indicate?", "reference_answer": "A clock-drift fault in the router's internal timing card, not an NTP issue.", "gold_doc_id": "RB032_core"},
+  {"question": "What severity should always be assigned to a KPI anomaly tagged Vector-Delta?", "reference_answer": "Critical, regardless of the underlying KPI values, per severity matrix v3.", "gold_doc_id": "RB033_process"}
+]
